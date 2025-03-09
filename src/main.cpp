@@ -1,5 +1,7 @@
 #include <iostream>
+#include <png.hpp>
 
 int main() {
-    std::cout << "Hello world!" << std::endl;
+    PNGfile img("../example.png");
+    std::cout << img << std::endl;
 }
