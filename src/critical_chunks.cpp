@@ -1,19 +1,18 @@
 #include <critical_chunks.hpp>
 #include <msb_to_lsb.hpp>
 
-void IHDR::read(std::ifstream &img)
-{
-    img.read(reinterpret_cast<char*>(&width), 4);
+IHDR::IHDR(std::ifstream &img, const unsigned int size, const byte_t type[4]): base_chunk(img, size, type) {
+    width = *(reinterpret_cast<unsigned int*>(data));
     MSB_to_LSB(&width, 4);
-    img.read(reinterpret_cast<char*>(&height), 4);
+    height = *(reinterpret_cast<unsigned int*>(data + 4));
     MSB_to_LSB(&height, 4);
 
-    img.read(reinterpret_cast<char*>(&bit_depth), 1);
-    img.read(reinterpret_cast<char*>(&color_type), 1);
+    bit_depth = *(reinterpret_cast<unsigned char*>(data + 8));
+    color_type = *(reinterpret_cast<unsigned char*>(data + 9));
 
-    img.read(reinterpret_cast<char*>(&compression_method), 1);
-    img.read(reinterpret_cast<char*>(&filter_method), 1);
-    img.read(reinterpret_cast<char*>(&interlace_method), 1);
+    compression_method = *(reinterpret_cast<unsigned char*>(data + 10));
+    filter_method = *(reinterpret_cast<unsigned char*>(data + 11));
+    interlace_method = *(reinterpret_cast<unsigned char*>(data + 12));
 }
 
 std::ostream& operator<<(std::ostream& out, const IHDR& obj) {
@@ -25,4 +24,9 @@ std::ostream& operator<<(std::ostream& out, const IHDR& obj) {
                << "Compression method: " << static_cast<int>(obj.compression_method) << std::endl
                << "Filter method:      " << static_cast<int>(obj.filter_method) << std::endl
                << "Interlace method:   " << static_cast<int>(obj.interlace_method) << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const IDAT& obj) {
+    return out << "=== IDAT chunk information ===" << std::endl
+               << "Data size: " << obj.size << std::endl;
 }

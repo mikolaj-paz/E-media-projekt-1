@@ -3,6 +3,7 @@
 #include <exception>
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 #include "critical_chunks.hpp"
 
@@ -30,17 +31,29 @@ class PNGfile {
 
         PNGfile(const char* path);
 
-        friend std::ostream& operator<<(std::ostream& out, const PNGfile obj);
+        friend std::ostream& operator<<(std::ostream& out, const PNGfile& obj);
 
-        ~PNGfile()
-            { delete header; }
+        ~PNGfile() {
+            delete header;
+            for (auto& i : ancillaryChunks)
+                delete i;
+        }
 
     private:
         IHDR* header;
+
+        std::vector<IDAT> imageData;
+        std::vector<base_chunk*> ancillaryChunks;
 
         static bool is_bytes_arr_equal(const byte_t* a, const byte_t* b, const int length = 4) {
             for (int i = 0; i < length; i++)
                 if (a[i] != b[i]) return false;
             return true;
+        }
+
+        static void read_size_type(std::ifstream &img, unsigned int &size, byte_t type[4]) {
+            img.read(reinterpret_cast<char*>(&size), 4);
+            MSB_to_LSB(&size, 4);
+            img.read(reinterpret_cast<char*>(type), 4);
         }
 };
