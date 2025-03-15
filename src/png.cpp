@@ -1,6 +1,8 @@
 #include <png.hpp>
 #include <msb_to_lsb.hpp>
 
+#include <iostream>
+
 PNGfile::PNGfile(const char* path) {
     std::ifstream img(path, std::ios::binary);
 
@@ -14,28 +16,28 @@ PNGfile::PNGfile(const char* path) {
         throw PNGfile::Exception("File's signature doesn't match PNG.");
 
     unsigned int chunkSize;
-    byte_t chunkType[4];
+    std::string chunkType;
     read_size_type(img, chunkSize, chunkType);
 
-    if (!is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("IHDR")))
+    if (chunkType != "IHDR")
         throw PNGfile::Exception("File doesn't contain IHDR chunk");
     
     header = new IHDR(img, chunkSize, chunkType);
 
-    switch (header->color_type) {
+    switch (header->colorType) {
         case 3:
-            if (!is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("PLTE")))
+            if (chunkType != "PLTE")
                 throw PNGfile::Exception("Mandatory PLTE chunk not found.");
             palette = new PLTE(img, chunkSize, chunkType);
             break;
         case 2:
         case 6:
-            if (is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("PLTE")))
+            if (chunkType == "PLTE")
                 palette = new PLTE(img, chunkSize, chunkType);
             break;
         case 0:
         case 4:
-            if (is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("PLTE")))
+            if (chunkType == "PLTE")
                 throw PNGfile::Exception("PLTE chunk should not be present");
             break;
 
@@ -45,21 +47,20 @@ PNGfile::PNGfile(const char* path) {
         img.close();
     }
     
-    while (!is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("IEND"))) {
+    int temp = 0;
+    while (chunkType != "IEND" && temp++ < 10) {
         read_size_type(img, chunkSize, chunkType);
 
-        if (is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("IDAT"))) {
+        if (chunkType == "IDAT")
             imageData.push_back(IDAT(img, chunkSize, chunkType));
-        }
-        else if (is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("tIME"))) {
+        else if (chunkType == "tIME")
             ancillaryChunks.push_back(new tIME(img, chunkSize, chunkType));
-        }
-        else if (is_bytes_arr_equal(chunkType, reinterpret_cast<const byte_t*>("tEXt"))) {
+        else if (chunkType == "tEXt")
             ancillaryChunks.push_back(new tEXt(img, chunkSize, chunkType));
-        }
-        else {
+        else if (chunkType == "bKGD")
+            ancillaryChunks.push_back(new bKGD(img, chunkSize, chunkType, header->colorType, header->bitDepth));
+        else
             ancillaryChunks.push_back(new base_chunk(img, chunkSize, chunkType));
-        }
     }
 }
 
@@ -76,10 +77,12 @@ std::ostream& operator<<(std::ostream& out, const PNGfile& obj) {
         out << i;
     
     for (auto& i : obj.ancillaryChunks) {
-        if (PNGfile::is_bytes_arr_equal(i->type, reinterpret_cast<const byte_t*>("tIME")))
+        if (i->type == "tIME")
             out << *(static_cast<tIME*>(i));
-        else if (PNGfile::is_bytes_arr_equal(i->type, reinterpret_cast<const byte_t*>("tEXt")))
+        else if (i->type == "tEXt")
             out << *(static_cast<tEXt*>(i));
+        else if (i->type == "bKGD")
+            out << *(static_cast<bKGD*>(i));
         else
             out << *i;
     }

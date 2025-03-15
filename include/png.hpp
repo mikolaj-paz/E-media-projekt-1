@@ -23,11 +23,11 @@ class PNGfile {
                 
                 const char* what() const noexcept override {
                     char str[] = "PNG file error: ";
-                    return strcat(str, err);
+                    return (std::string(str) + err).c_str();
                 }
 
             private:
-                const char* err;
+                std::string err;
         };
 
         PNGfile(const char* path);
@@ -54,9 +54,11 @@ class PNGfile {
             return true;
         }
 
-        static void read_size_type(std::ifstream &img, unsigned int &size, byte_t type[4]) {
+        static void read_size_type(std::ifstream &img, unsigned int &size, std::string& type) {
             img.read(reinterpret_cast<char*>(&size), 4);
             MSB_to_LSB(&size, 4);
-            img.read(reinterpret_cast<char*>(type), 4);
+            byte_t cType[4];
+            img.read(reinterpret_cast<char*>(cType), 4);
+            type = std::string(reinterpret_cast<char*>(cType), 4);
         }
 };

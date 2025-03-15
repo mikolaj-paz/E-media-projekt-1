@@ -3,6 +3,7 @@
 #include <ostream>
 #include <fstream>
 #include <string>
+#include <map>
 
 #include "chunk.hpp"
 
@@ -25,7 +26,7 @@ class tIME : public base_chunk {
             friend std::ostream& operator<<(std::ostream& out, const UTC& obj);
         };
 
-        tIME(std::ifstream &img, const unsigned int size, const byte_t type[4]):
+        tIME(std::ifstream &img, const unsigned int size, const std::string type):
             base_chunk(img, size, type),
             timeStamp(data)
         {}
@@ -37,14 +38,35 @@ class tIME : public base_chunk {
         UTC timeStamp;
 };
     
-    class tEXt : public base_chunk {
-        public:
-            tEXt(std::ifstream &img, const unsigned int size, const byte_t type[4]);
-            
-            friend class PNGfile;
-            friend std::ostream& operator<<(std::ostream& out, const tEXt& obj);
+class tEXt : public base_chunk {
+    public:
+        tEXt(std::ifstream &img, const unsigned int size, const std::string type);
         
-        private:
-            std::string keyword;
-            std::string text;
+        friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const tEXt& obj);
+    
+    private:
+        std::string keyword;
+        std::string text;
+};
+
+class bKGD : public base_chunk {
+    public:
+        bKGD(std::ifstream &img, const unsigned int size, const std::string type, const byte_t& colorType, const byte_t& bitDepth);
+
+        ~bKGD() {
+            if (greyscale) delete greyscale;
+            if (truecolor) delete[] truecolor;
+            if (paletteIndex) delete paletteIndex;
+        }
+
+        friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const bKGD& obj);
+    
+    private:
+        short* greyscale = nullptr;
+        short* truecolor = nullptr;
+        byte_t* paletteIndex = nullptr;
+        
+        static const std::map<byte_t, short> bitDepthMask;
 };

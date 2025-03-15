@@ -2,6 +2,7 @@
 
 #include <ostream>
 #include <fstream>
+#include <string>
 
 #include "chunk.hpp"
 
@@ -11,7 +12,7 @@
 
 class IHDR : public base_chunk {
     public:
-        IHDR(std::ifstream &img, const unsigned int size, const byte_t type[4]);
+        IHDR(std::ifstream &img, const unsigned int size, const std::string& type);
 
         friend std::ostream& operator<<(std::ostream& out, const IHDR& obj);
         friend class PNGfile;
@@ -20,16 +21,16 @@ class IHDR : public base_chunk {
         unsigned int width;
         unsigned int height;
         
-        byte_t bit_depth;
-        byte_t color_type;
-        byte_t compression_method;
-        byte_t filter_method;
-        byte_t interlace_method;
+        byte_t bitDepth;
+        byte_t colorType;
+        byte_t compressionMethod;
+        byte_t filterMethod;
+        byte_t interlaceMethod;
 };
 
 class IDAT : public base_chunk {
     public:
-        IDAT(std::ifstream &img, const unsigned int size, const byte_t type[4]): base_chunk(img, size, type) {}
+        IDAT(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {}
 
         friend std::ostream& operator<<(std::ostream& out, const IDAT& obj);
         friend class PNGfile;
@@ -37,7 +38,7 @@ class IDAT : public base_chunk {
 
 class PLTE : public base_chunk {
     public:
-        PLTE(std::ifstream &img, const unsigned int size, const byte_t type[4]): base_chunk(img, size, type) {}
+        PLTE(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {}
 
         friend std::ostream& operator<<(std::ostream& out, const PLTE& obj);
         friend class PNGfile;

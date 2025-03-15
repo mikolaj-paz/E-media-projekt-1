@@ -12,23 +12,19 @@ class PNGfile;
 
 class base_chunk {
     public:
-        base_chunk(const base_chunk& other): size{other.size} {
+        base_chunk(const base_chunk& other): size{other.size}, type{other.type} {
             for (int i = 0; i < 4; i++) {
-                type[i] = other.type[i];
                 crc[i] = other.crc[i];
             }
             data = new byte_t[size];
             for (int i = 0; i < size; i++)
-                data[i] = other.data[i];
+                data[i] = other.data[i];           
         }
 
         base_chunk& operator=(const base_chunk& other)
             { return *this = base_chunk(other); }
 
-        base_chunk(std::ifstream &img, const unsigned int size, const byte_t type[4]): size{size} {
-            for (int i = 0; i < 4; i++)
-                this->type[i] = type[i];
-
+        base_chunk(std::ifstream &img, const unsigned int size, const std::string type): size{size}, type{type} {
             // Chunk data
             data = new byte_t[size];
             img.read(reinterpret_cast<char*>(data), size);
@@ -41,7 +37,7 @@ class base_chunk {
             { delete[] data; }
 
         friend std::ostream& operator<<(std::ostream& out, const base_chunk& obj) {
-            return out << "=== " << obj.type[0] << obj.type[1] << obj.type[2] << obj.type[3] << " chunk information ===" << std::endl
+            return out << "=== " << obj.type << " chunk information ===" << std::endl
                        << "not supported" << std::endl;
         }
 
@@ -50,7 +46,7 @@ class base_chunk {
 
     protected:
         unsigned int size;
-        byte_t type[4];
+        std::string type;
         byte_t* data;
         byte_t crc[4];
 };
