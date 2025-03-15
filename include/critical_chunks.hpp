@@ -1,6 +1,5 @@
 #pragma once
 
-#include <istream>
 #include <ostream>
 #include <fstream>
 
@@ -34,7 +33,12 @@ class IDAT : public base_chunk {
 
         friend std::ostream& operator<<(std::ostream& out, const IDAT& obj);
         friend class PNGfile;
-    
-    private:
-        byte_t* palette;
+};
+
+class PLTE : public base_chunk {
+    public:
+        PLTE(std::ifstream &img, const unsigned int size, const byte_t type[4]): base_chunk(img, size, type) {}
+
+        friend std::ostream& operator<<(std::ostream& out, const PLTE& obj);
+        friend class PNGfile;
 };

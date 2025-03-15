@@ -2,6 +2,11 @@
 #include <png.hpp>
 
 int main() {
-    PNGfile img("../example.png");
-    std::cout << img << std::endl;
+    try {
+        PNGfile img("../example.png");
+        std::cout << img << std::endl;
+    }
+    catch (std::exception &e) {
+        std::cout << e.what() << std::endl;
+    }
 }

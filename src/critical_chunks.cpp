@@ -27,6 +27,17 @@ std::ostream& operator<<(std::ostream& out, const IHDR& obj) {
 }
 
 std::ostream& operator<<(std::ostream& out, const IDAT& obj) {
-    return out << "=== IDAT chunk information ===" << std::endl
+    out << "=== IDAT chunk information ===" << std::endl
+        << "Data size: " << obj.size << std::endl
+        << "CRC: ";
+
+    for (auto& i : obj.crc)
+        out << static_cast<int>(i) << " ";
+    
+    return out << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const PLTE& obj) {
+    return out << "=== PLTE chunk information ===" << std::endl
                << "Data size: " << obj.size << std::endl;
 }

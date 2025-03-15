@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "critical_chunks.hpp"
+#include "ancillary_chunks.hpp"
 
 #ifndef byte_t
 #define byte_t unsigned char
@@ -34,13 +35,15 @@ class PNGfile {
         friend std::ostream& operator<<(std::ostream& out, const PNGfile& obj);
 
         ~PNGfile() {
-            delete header;
+            if (header) delete header;
+            if (palette) delete palette;
             for (auto& i : ancillaryChunks)
                 delete i;
         }
 
     private:
-        IHDR* header;
+        IHDR* header = nullptr;
+        PLTE* palette = nullptr;
 
         std::vector<IDAT> imageData;
         std::vector<base_chunk*> ancillaryChunks;

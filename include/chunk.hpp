@@ -8,6 +8,8 @@
 #define byte_t unsigned char
 #endif
 
+class PNGfile;
+
 class base_chunk {
     public:
         base_chunk(const base_chunk& other): size{other.size} {
@@ -44,6 +46,7 @@ class base_chunk {
         }
 
         friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const PNGfile& obj);
 
     protected:
         unsigned int size;
