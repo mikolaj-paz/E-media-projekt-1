@@ -41,3 +41,13 @@ std::ostream& operator<<(std::ostream& out, const PLTE& obj) {
     return out << "=== PLTE chunk information ===" << std::endl
                << "Data size: " << obj.size << std::endl;
 }
+
+std::ostream& operator<<(std::ostream& out, const IEND& obj) {
+    out << "=== IEND chunk information ===" << std::endl
+        << "CRC: ";
+
+    for (auto& i : obj.crc)
+        out << static_cast<int>(i) << " ";
+    
+    return out << std::endl;
+}

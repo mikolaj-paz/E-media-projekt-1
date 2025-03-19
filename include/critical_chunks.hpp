@@ -14,8 +14,8 @@ class IHDR : public base_chunk {
     public:
         IHDR(std::ifstream &img, const unsigned int size, const std::string& type);
 
-        friend std::ostream& operator<<(std::ostream& out, const IHDR& obj);
         friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const IHDR& obj);
             
     private:
         unsigned int width;
@@ -32,14 +32,22 @@ class IDAT : public base_chunk {
     public:
         IDAT(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {}
 
-        friend std::ostream& operator<<(std::ostream& out, const IDAT& obj);
         friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const IDAT& obj);
 };
 
 class PLTE : public base_chunk {
     public:
         PLTE(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {}
 
-        friend std::ostream& operator<<(std::ostream& out, const PLTE& obj);
         friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const PLTE& obj);
+};
+
+class IEND : public base_chunk {
+    public:
+        IEND(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {}
+
+        friend class PNGfile;
+        friend std::ostream& operator<<(std::ostream& out, const IEND& obj);
 };

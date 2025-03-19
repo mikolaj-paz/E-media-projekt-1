@@ -46,6 +46,7 @@ class PNGfile {
         PLTE* palette = nullptr;
 
         std::vector<IDAT> imageData;
+        std::vector<base_chunk*> criticalChunks;
         std::vector<base_chunk*> ancillaryChunks;
 
         static bool is_bytes_arr_equal(const byte_t* a, const byte_t* b, const int length = 4) {

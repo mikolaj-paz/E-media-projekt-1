@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        PNGfile img("../example.png");
+        PNGfile img("../example2.png");
         std::cout << img << std::endl;
     }
     catch (const PNGfile::Exception& e) {

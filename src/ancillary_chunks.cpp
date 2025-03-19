@@ -54,18 +54,38 @@ base_chunk(img, size, type) {
     }
 }
 
+pHYs::pHYs(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
+    pixX = *(reinterpret_cast<unsigned int*>(data));
+    MSB_to_LSB(&pixX, 4);
+    pixY = *(reinterpret_cast<unsigned int*>(data + 4));
+    MSB_to_LSB(&pixY, 4);
+
+    unit = *(reinterpret_cast<unsigned int*>(data + 8));
+}
+
+cHRM::cHRM(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
+    wpx = cast_to_uint(data);
+    wpy = cast_to_uint(data + 4);
+    rx = cast_to_uint(data + 8);
+    ry = cast_to_uint(data + 12);
+    gx = cast_to_uint(data + 16);
+    gy = cast_to_uint(data + 20);
+    bx = cast_to_uint(data + 24);
+    by = cast_to_uint(data + 28);
+}
+
 std::ostream& operator<<(std::ostream& out, const tIME::UTC& obj) {
     out << obj.year << '-';
     if (obj.month < 10) out << '0';
     out << obj.month << '-';
     if (obj.day < 10) out << '0';
-    out << obj.day << ' ';
+    out << obj.day << 'T';
     if (obj.hour < 10) out << '0';
     out << obj.hour << ':';
     if (obj.minute < 10) out << '0';
     out << obj.minute << ':';
     if (obj.second < 10) out << '0';
-    out << obj.second << ' ';
+    out << obj.second << 'U';
 
     return out;
 }
@@ -93,4 +113,28 @@ std::ostream& operator<<(std::ostream& out, const bKGD& obj) {
                    << "Blue: " << obj.truecolor[2] << std::endl;
     else
         return out << "Palette index: " << obj.paletteIndex << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const gAMA& obj) {
+    return out << "=== gAMA chunk information ===" << std::endl
+               << "Image gamma: " << static_cast<float>(obj.gamma) / 1E5f << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const pHYs& obj) {
+    return out << "=== gAMA chunk information ===" << std::endl
+               << "Pixels per unit, X axis: " << obj.pixX << std::endl
+               << "Pixels per unit, Y axis: " << obj.pixY << std::endl
+               << "Unit: " << static_cast<int>(obj.unit) << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const cHRM& obj) {
+    return out << "=== cHRM chunk information ===" << std::endl
+               << "White Point x: " << static_cast<float>(obj.wpx) / 1E5f << std::endl
+               << "White Point y: " << static_cast<float>(obj.wpy) / 1E5f << std::endl
+               << "Red x: " << static_cast<float>(obj.rx) / 1E5f << std::endl
+               << "Red y: " << static_cast<float>(obj.ry) / 1E5f << std::endl
+               << "Green x: " << static_cast<float>(obj.gx) / 1E5f << std::endl
+               << "Green y: " << static_cast<float>(obj.gy) / 1E5f << std::endl
+               << "Blue x: " << static_cast<float>(obj.bx) / 1E5f << std::endl
+               << "Blue y: " << static_cast<float>(obj.by) / 1E5f << std::endl;
 }
