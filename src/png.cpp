@@ -24,28 +24,28 @@ PNGfile::PNGfile(const char* path) {
     
     header = new IHDR(img, chunkSize, chunkType);
 
-    switch (header->colorType) {
-        case 3:
-            if (chunkType != "PLTE")
-                throw PNGfile::Exception("Mandatory PLTE chunk not found.");
-            palette = new PLTE(img, chunkSize, chunkType);
-            break;
-        case 2:
-        case 6:
-            if (chunkType == "PLTE")
-                palette = new PLTE(img, chunkSize, chunkType);
-            break;
-        case 0:
-        case 4:
-            if (chunkType == "PLTE")
-                throw PNGfile::Exception("PLTE chunk should not be present");
-            break;
+    // switch (header->colorType) {
+    //     case 3:
+    //         if (chunkType != "PLTE")
+    //             throw PNGfile::Exception("Mandatory PLTE chunk not found.");
+    //         palette = new PLTE(img, chunkSize, chunkType);
+    //         break;
+    //     case 2:
+    //     case 6:
+    //         if (chunkType == "PLTE")
+    //             palette = new PLTE(img, chunkSize, chunkType);
+    //         break;
+    //     case 0:
+    //     case 4:
+    //         if (chunkType == "PLTE")
+    //             throw PNGfile::Exception("PLTE chunk should not be present");
+    //         break;
 
-        default:
-            throw PNGfile::Exception("Invalid color type.");
+    //     default:
+    //         throw PNGfile::Exception("Invalid color type.");
 
-        img.close();
-    }
+    //     img.close();
+    // }
     
     int temp = 0;
     while (chunkType != "IEND") {

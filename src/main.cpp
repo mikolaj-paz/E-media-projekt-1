@@ -3,11 +3,12 @@
 
 int main() {
     try {
-        PNGfile img("../example2.png");
+        PNGfile img("../example3.png");
         std::cout << img << std::endl;
     }
     catch (const PNGfile::Exception& e) {
         std::cout << e.what() << std::endl;
+        return 0;
     }
 
 
