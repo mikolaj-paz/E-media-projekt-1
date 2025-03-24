@@ -32,6 +32,12 @@ class PNGfile {
 
         PNGfile(const char* path);
 
+        const unsigned int& width() const
+            { return header->width; }
+
+        const unsigned int& height() const
+            { return header->height; }
+
         friend std::ostream& operator<<(std::ostream& out, const PNGfile& obj);
 
         ~PNGfile() {
