@@ -106,13 +106,13 @@ std::ostream& operator<<(std::ostream& out, const bKGD& obj) {
         << "------ Background color ------" << std::endl;
 
     if (obj.greyscale)
-        return out << "Greyscale: " << obj.greyscale << std::endl;
+        return out << "Greyscale: " << *(obj.greyscale) << std::endl;
     else if (obj.truecolor)
         return out << "Red: " << obj.truecolor[0] << std::endl
                    << "Green: " << obj.truecolor[1] << std::endl
                    << "Blue: " << obj.truecolor[2] << std::endl;
     else
-        return out << "Palette index: " << obj.paletteIndex << std::endl;
+        return out << "Palette index: " << *(obj.paletteIndex) << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& out, const gAMA& obj) {
