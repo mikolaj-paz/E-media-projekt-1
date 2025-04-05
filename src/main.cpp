@@ -7,13 +7,14 @@
 #include <fftw3.h>
 
 #ifndef IMAGE_DIR
-#define IMAGE_DIR "../example5.png"
+#define IMAGE_DIR "../example2.png"
 #endif
 
 int main() {
     try {
         PNGfile img(IMAGE_DIR);
         std::cout << img << std::endl;
+        img.anonymize();
         img.save("../test.png");
         img.show();
     }
@@ -26,54 +27,73 @@ int main() {
     unsigned int width = image.getSize().x;
     unsigned int height = image.getSize().y;
 
-    sf::RenderWindow window(sf::VideoMode({2 * width, height}), "DFT");
+    sf::RenderWindow window(sf::VideoMode({2 * width, 2 * height}), "DFT");
 
     fftw_complex* complexData = fftw_alloc_complex(width * height);
     fftw_complex* fft = fftw_alloc_complex(width * height);
 
     fftw_plan plan = fftw_plan_dft_2d(height, width, complexData, fft, FFTW_FORWARD, FFTW_ESTIMATE);
 
-    double maxVal = 0.0;
     for (unsigned int i = 0, k = 0; i < height; i++)
         for (unsigned int j = 0; j < width; j++) {
             double r = static_cast<double>(image.getPixel({j, i}).r);
             double g = static_cast<double>(image.getPixel({j, i}).g);
             double b = static_cast<double>(image.getPixel({j, i}).b);
 
-            // complexData[k][0] = (r + g + b) / 3.0f;
-            complexData[k][0] = 0.299 * r + 0.587 * g + 0.114 * b;
+            complexData[k][0] = 0.2126 * r + 0.7152 * g + 0.0722 * b; // RGB do Luminance
             complexData[k][1] = 0.0;
             
-            unsigned char luminosity = static_cast<unsigned char>(complexData[k++][0]);
-            image.setPixel({j, i}, sf::Color(luminosity, luminosity, luminosity));
+            unsigned char luminance = static_cast<unsigned char>(complexData[k++][0]);
+            image.setPixel({j, i}, sf::Color(luminance, luminance, luminance));
         }
 
     fftw_execute(plan);
     fftw_destroy_plan(plan);
 
     double magnitudes[width * height];
+    double phases[width * height];
+
     sf::Image fftImage({width, height});
+    sf::Image fftShiftImage({width, height});
+    sf::Image fftPhaseImage({width, height});
+
+    double maxMagVal = 0.0;
+    double maxPhaVal = 0.0;
     for (unsigned int i = 0; i < height; i++)
         for (unsigned int j = 0; j < width; j++) {
             double real = fft[i * width + j][0];
             double imag = fft[i * width + j][1];
             double grey = std::sqrt(real * real + imag * imag);
+            double phase = std::atan(imag / real);
             magnitudes[i * width + j] = grey;
-            if (maxVal < grey) maxVal = grey;
+            phases[i * width + j] = phase;
+            if (maxMagVal < grey) maxMagVal = grey;
+            if (maxPhaVal < phase) maxPhaVal = phase;
         }
 
     for (unsigned int i = 0; i < height; i++)
         for (unsigned int j = 0; j < width; j++) {
-            unsigned char grey = static_cast<unsigned char>(255.0 * (std::log(magnitudes[i * width + j]) / std::log(maxVal)));
-            fftImage.setPixel({(j + width / 2) % width, (i + height / 2) % height }, sf::Color(grey, grey, grey));
+            unsigned char grey = static_cast<unsigned char>(255.0 * std::log10(magnitudes[i * width + j]) / std::log10(maxMagVal));
+            unsigned char phase = static_cast<unsigned char>(255.0 * std::log10(phases[i * width + j]) / std::log10(maxPhaVal));
+            fftImage.setPixel({j, i}, sf::Color(grey, grey, grey));
+            fftShiftImage.setPixel({ (j + width / 2) % width, (i + height / 2) % height }, sf::Color(grey, grey, grey));
+            fftPhaseImage.setPixel({ (j + width / 2) % width, (i + height / 2) % height }, sf::Color(phase, phase, phase));
         }
     
     const sf::Texture texture(image);
-    const sf::Texture fftTexture(fftImage);
     sf::Sprite sprite(texture);
-    sf::Sprite fftSprite(fftTexture);
 
-    fftSprite.setPosition({static_cast<float>(width), 0});
+    const sf::Texture fftTexture(fftImage);
+    const sf::Texture fftShiftTexture(fftShiftImage);
+    const sf::Texture fftPhaseTexture(fftPhaseImage);
+
+    sf::Sprite fftSprite(fftTexture);
+    sf::Sprite fftShiftSprite(fftShiftTexture);
+    sf::Sprite fftPhaseSprite(fftPhaseTexture);
+
+    fftSprite.setPosition({static_cast<float>(width), static_cast<float>(height)});
+    fftShiftSprite.setPosition({static_cast<float>(width), 0});
+    fftPhaseSprite.setPosition({0, static_cast<float>(height)});
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -84,6 +104,8 @@ int main() {
         window.clear();
         window.draw(sprite);
         window.draw(fftSprite);
+        window.draw(fftShiftSprite);
+        window.draw(fftPhaseSprite);
         window.display();
     }    
 
