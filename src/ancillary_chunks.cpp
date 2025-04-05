@@ -11,7 +11,7 @@ tIME::UTC::UTC(const byte_t arr[7]) {
     second = static_cast<int>(arr[6]);
 }
 
-tEXt::tEXt(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
+tEXt::tEXt(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("tEXt")) {
     byte_t inputByte = 0;
     int bytesRead = 0;
 
@@ -34,8 +34,8 @@ const std::map<byte_t, short> bKGD::bitDepthMask {
     { 16, 0xFFFF }
 };
 
-bKGD::bKGD(std::ifstream &img, const unsigned int size, const std::string type, const byte_t& colorType, const byte_t& bitDepth): 
-base_chunk(img, size, type) {
+bKGD::bKGD(std::ifstream &img, const unsigned int size, const byte_t& colorType, const byte_t& bitDepth): 
+base_chunk(img, size, std::string("bKGD")) {
     switch (colorType) {
         case 0:
         case 4:
@@ -54,13 +54,13 @@ base_chunk(img, size, type) {
     }
 }
 
-pHYs::pHYs(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
+pHYs::pHYs(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("pHYs")) {
     pixX = read_uint(data);
     pixY = read_uint(data + 4);
     unit = *(reinterpret_cast<unsigned int*>(data + 8));
 }
 
-cHRM::cHRM(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
+cHRM::cHRM(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("cHRM")) {
     wpx = read_uint(data);
     wpy = read_uint(data + 4);
     rx = read_uint(data + 8);

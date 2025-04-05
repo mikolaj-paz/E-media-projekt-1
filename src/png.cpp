@@ -39,17 +39,17 @@ PNGfile::PNGfile(const char* path) {
         else if (chunkType == "IEND")
             criticalChunks.push_back(new IEND(img));
         else if (chunkType == "tIME")
-            ancillaryChunks.push_back(new tIME(img, chunkSize, chunkType));
+            ancillaryChunks.push_back(new tIME(img, chunkSize));
         else if (chunkType == "tEXt")
-            ancillaryChunks.push_back(new tEXt(img, chunkSize, chunkType));
+            ancillaryChunks.push_back(new tEXt(img, chunkSize));
         else if (chunkType == "bKGD")
-            ancillaryChunks.push_back(new bKGD(img, chunkSize, chunkType, header->colorType, header->bitDepth));
+            ancillaryChunks.push_back(new bKGD(img, chunkSize, header->colorType, header->bitDepth));
         else if (chunkType == "gAMA")
-            ancillaryChunks.push_back(new gAMA(img, chunkSize, chunkType));
+            ancillaryChunks.push_back(new gAMA(img, chunkSize));
         else if (chunkType == "pHYs")
-            ancillaryChunks.push_back(new pHYs(img, chunkSize, chunkType));
+            ancillaryChunks.push_back(new pHYs(img, chunkSize));
         else if (chunkType == "cHRM")
-            ancillaryChunks.push_back(new cHRM(img, chunkSize, chunkType));
+            ancillaryChunks.push_back(new cHRM(img, chunkSize));
         else
             ancillaryChunks.push_back(new base_chunk(img, chunkSize, chunkType));
     }

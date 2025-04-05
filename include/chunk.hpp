@@ -10,6 +10,8 @@
 
 class PNGfile;
 
+/// @class base_chunk
+/// @brief Represents a base class for handling PNG file chunks.
 class base_chunk {
     public:
         /// @brief Copy constructor for the base_chunk class.
