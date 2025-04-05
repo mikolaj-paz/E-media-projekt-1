@@ -38,6 +38,12 @@ class PNGfile {
         const unsigned int& height() const
             { return header->height; }
 
+        void anonymize();
+
+        void show() const;
+
+        void save(const std::string& path) const;
+
         friend std::ostream& operator<<(std::ostream& out, const PNGfile& obj);
 
         ~PNGfile() {
@@ -55,6 +61,10 @@ class PNGfile {
         std::vector<base_chunk*> criticalChunks;
         std::vector<base_chunk*> ancillaryChunks;
 
+        std::string srcDir;
+
+        void show_with_PLTE() const;
+
         static bool is_bytes_arr_equal(const byte_t* a, const byte_t* b, const int length = 4) {
             for (int i = 0; i < length; i++)
                 if (a[i] != b[i]) return false;
@@ -67,5 +77,18 @@ class PNGfile {
             byte_t cType[4];
             img.read(reinterpret_cast<char*>(cType), 4);
             type = std::string(reinterpret_cast<char*>(cType), 4);
+        }
+
+        static void save_size_type(std::ofstream& img, unsigned int size, std::string type) {
+            LSB_to_MSB(&size, 4);
+            img.write(reinterpret_cast<char*>(&size), 4);
+            for (auto& c : type)
+                img.write(reinterpret_cast<char*>(&c), 1);
+        }
+
+        static void save_chunk(std::ofstream& img, const base_chunk* chunk) {
+            save_size_type(img, chunk->size, chunk->type);
+            img.write(reinterpret_cast<char*>(chunk->data), chunk->size);
+            img.write(reinterpret_cast<const char*>(chunk->crc), 4);
         }
 };
