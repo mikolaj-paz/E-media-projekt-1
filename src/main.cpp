@@ -14,23 +14,24 @@ int main() {
     try {
         PNGfile img(IMAGE_DIR);
         std::cout << img << std::endl;
+        img.save("../test.png");
+        img.show();
     }
     catch (const PNGfile::Exception& e) {
         std::cout << e.what() << std::endl;
         return 0;
     }
 
-    const sf::Image image(IMAGE_DIR);
+    sf::Image image(IMAGE_DIR);
     unsigned int width = image.getSize().x;
     unsigned int height = image.getSize().y;
 
-    sf::RenderWindow window(sf::VideoMode({2 * width, height}), "Obraz");
+    sf::RenderWindow window(sf::VideoMode({2 * width, height}), "DFT");
 
     fftw_complex* complexData = fftw_alloc_complex(width * height);
     fftw_complex* fft = fftw_alloc_complex(width * height);
 
-    // fftw_plan plan = fftw_plan_dft_1d(width * height, complexData, fft, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_plan plan = fftw_plan_dft_2d(width, height, complexData, fft, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_plan plan = fftw_plan_dft_2d(height, width, complexData, fft, FFTW_FORWARD, FFTW_ESTIMATE);
 
     double maxVal = 0.0;
     for (unsigned int i = 0, k = 0; i < height; i++)
@@ -39,8 +40,12 @@ int main() {
             double g = static_cast<double>(image.getPixel({j, i}).g);
             double b = static_cast<double>(image.getPixel({j, i}).b);
 
-            complexData[k][0] = (r + g + b) / 3.0f;
-            complexData[k++][1] = 0.0;
+            // complexData[k][0] = (r + g + b) / 3.0f;
+            complexData[k][0] = 0.299 * r + 0.587 * g + 0.114 * b;
+            complexData[k][1] = 0.0;
+            
+            unsigned char luminosity = static_cast<unsigned char>(complexData[k++][0]);
+            image.setPixel({j, i}, sf::Color(luminosity, luminosity, luminosity));
         }
 
     fftw_execute(plan);
