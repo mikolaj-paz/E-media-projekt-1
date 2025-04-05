@@ -1,7 +1,7 @@
 #include <critical_chunks.hpp>
 #include <helper.hpp>
 
-IHDR::IHDR(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {
+IHDR::IHDR(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("IHDR")) {
     width = read_uint(data);
     height = read_uint(data + 4);
 
@@ -13,7 +13,7 @@ IHDR::IHDR(std::ifstream &img, const unsigned int size, const std::string& type)
     interlaceMethod = *(reinterpret_cast<byte_t*>(data + 12));
 }
 
-PLTE::PLTE(std::ifstream &img, const unsigned int size, const std::string& type): base_chunk(img, size, type) {
+PLTE::PLTE(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("PLTE")) {
     for (int i = 0; i < size / 3; i++)
         entries.push_back(rgb_entry(*(data + 3*i), *(data + 3*i + 1), *(data + 3*i + 2)));
 }

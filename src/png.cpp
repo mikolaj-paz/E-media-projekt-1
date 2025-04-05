@@ -26,18 +26,18 @@ PNGfile::PNGfile(const char* path) {
     if (chunkType != "IHDR")
         throw PNGfile::Exception("File doesn't contain IHDR chunk");
     
-    header = new IHDR(img, chunkSize, chunkType);
+    header = new IHDR(img, chunkSize);
     
     int temp = 0;
     while (chunkType != "IEND") {
         read_size_type(img, chunkSize, chunkType);
 
         if (chunkType == "IDAT")
-            imageData.push_back(IDAT(img, chunkSize, chunkType));
+            imageData.push_back(IDAT(img, chunkSize));
         else if (chunkType == "PLTE")
-            palette = new PLTE(img, chunkSize, chunkType);
+            palette = new PLTE(img, chunkSize);
         else if (chunkType == "IEND")
-            criticalChunks.push_back(new IEND(img, chunkSize, chunkType));
+            criticalChunks.push_back(new IEND(img));
         else if (chunkType == "tIME")
             ancillaryChunks.push_back(new tIME(img, chunkSize, chunkType));
         else if (chunkType == "tEXt")
