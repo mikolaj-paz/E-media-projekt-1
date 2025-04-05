@@ -85,5 +85,4 @@ void PNGfile::anonymize() {
         default:
             break;
     }
-    ancillaryChunks.clear();
 }
