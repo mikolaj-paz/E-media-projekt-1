@@ -75,24 +75,6 @@ PNGfile::PNGfile(const char* path) {
     img.close();
 }
 
-void PNGfile::anonymize() {
-    switch (header->colorType) {
-        case 3: // to do, mandatory
-            break;
-        case 2:
-        case 6:
-            if (palette) {
-                delete palette;
-                palette = nullptr;
-            }
-            break;
-
-        default:
-            break;
-    }
-    ancillaryChunks.clear();
-}
-
 void PNGfile::show() const {
     if (palette) {
         show_with_PLTE();
