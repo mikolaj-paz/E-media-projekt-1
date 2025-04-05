@@ -9,7 +9,7 @@ add_subdirectory( "lib/SFML" )
 add_subdirectory( "lib/fftw" )
 
 add_executable( a 
-    "src/msb_to_lsb.cpp"
+    "src/helper.cpp"
     "src/critical_chunks.cpp"
     "src/ancillary_chunks.cpp"
     "src/png.cpp"

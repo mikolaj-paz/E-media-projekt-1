@@ -55,23 +55,20 @@ base_chunk(img, size, type) {
 }
 
 pHYs::pHYs(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
-    pixX = *(reinterpret_cast<unsigned int*>(data));
-    MSB_to_LSB(&pixX, 4);
-    pixY = *(reinterpret_cast<unsigned int*>(data + 4));
-    MSB_to_LSB(&pixY, 4);
-
+    pixX = read_uint(data);
+    pixY = read_uint(data + 4);
     unit = *(reinterpret_cast<unsigned int*>(data + 8));
 }
 
 cHRM::cHRM(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
-    wpx = cast_to_uint(data);
-    wpy = cast_to_uint(data + 4);
-    rx = cast_to_uint(data + 8);
-    ry = cast_to_uint(data + 12);
-    gx = cast_to_uint(data + 16);
-    gy = cast_to_uint(data + 20);
-    bx = cast_to_uint(data + 24);
-    by = cast_to_uint(data + 28);
+    wpx = read_uint(data);
+    wpy = read_uint(data + 4);
+    rx = read_uint(data + 8);
+    ry = read_uint(data + 12);
+    gx = read_uint(data + 16);
+    gy = read_uint(data + 20);
+    bx = read_uint(data + 24);
+    by = read_uint(data + 28);
 }
 
 std::ostream& operator<<(std::ostream& out, const tIME::UTC& obj) {

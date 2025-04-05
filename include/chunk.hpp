@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "msb_to_lsb.hpp"
+#include "helper.hpp"
 
 #ifndef byte_t
 #define byte_t unsigned char

@@ -1,5 +1,5 @@
 #include <png.hpp>
-#include <msb_to_lsb.hpp>
+#include <helper.hpp>
 
 #include <iostream>
 #include <SFML/Graphics.hpp>

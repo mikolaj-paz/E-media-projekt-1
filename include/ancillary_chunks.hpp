@@ -73,10 +73,8 @@ class bKGD : public base_chunk {
 
 class gAMA : public base_chunk {
     public:
-        gAMA(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type) {
-            gamma = *(reinterpret_cast<unsigned int*>(data));
-            MSB_to_LSB(&gamma, 4);
-        }
+        gAMA(std::ifstream &img, const unsigned int size, const std::string type): base_chunk(img, size, type)
+            { gamma = read_uint(data); }
 
         friend class PNGfile;
         friend std::ostream& operator<<(std::ostream& out, const gAMA& obj);
@@ -114,10 +112,4 @@ class cHRM : public base_chunk {
         unsigned int gy;
         unsigned int bx;
         unsigned int by;
-
-        unsigned int cast_to_uint(byte_t* ptr) {
-            unsigned int tmp = *(reinterpret_cast<unsigned int*>(ptr));
-            MSB_to_LSB(&tmp, 4);
-            return tmp;
-        }
 };
