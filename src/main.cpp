@@ -73,7 +73,7 @@ int main() {
     sf::Sprite sprite(texture);
     sf::Sprite fftSprite(fftTexture);
 
-    fftSprite.move({static_cast<float>(width), 0});
+    fftSprite.setPosition({static_cast<float>(width), 0});
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {

@@ -59,3 +59,5 @@ test.txt
 **/*.nls.*.json
 
 fftw/
+
+test.png
