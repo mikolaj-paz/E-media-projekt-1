@@ -118,7 +118,7 @@ std::ostream& operator<<(std::ostream& out, const gAMA& obj) {
 }
 
 std::ostream& operator<<(std::ostream& out, const pHYs& obj) {
-    return out << "=== gAMA chunk information ===" << std::endl
+    return out << "=== pHYs chunk information ===" << std::endl
                << "Pixels per unit, X axis: " << obj.pixX << std::endl
                << "Pixels per unit, Y axis: " << obj.pixY << std::endl
                << "Unit: " << static_cast<int>(obj.unit) << std::endl;
