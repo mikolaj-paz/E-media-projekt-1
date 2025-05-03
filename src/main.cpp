@@ -7,16 +7,17 @@
 #include <fftw3.h>
 
 #ifndef IMAGE_DIR
-#define IMAGE_DIR "../example2.png"
+#define IMAGE_DIR "../test.png"
 #endif
 
 int main() {
     try {
         PNGfile img(IMAGE_DIR);
         std::cout << img << std::endl;
-        img.anonymize();
-        img.save("../test.png");
-        img.show();
+        img.modify("../test.png");
+        std::cout << img << std::endl;
+        // img.anonymize("../test.png");
+        // img.show();
     }
     catch (const PNGfile::Exception& e) {
         std::cout << e.what() << std::endl;
