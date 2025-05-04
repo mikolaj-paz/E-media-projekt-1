@@ -7,7 +7,7 @@
 #include <fftw3.h>
 
 #ifndef IMAGE_DIR
-#define IMAGE_DIR "../test.png"
+#define IMAGE_DIR "../example3.png"
 #endif
 
 int main() {
@@ -15,9 +15,15 @@ int main() {
         PNGfile img(IMAGE_DIR);
         std::cout << img << std::endl;
         img.modify("../test.png");
-        std::cout << img << std::endl;
-        // img.anonymize("../test.png");
-        // img.show();
+
+        PNGfile img_modified("../test.png");
+        std::cout << img_modified << std::endl;
+
+        img.anonymize("../test.png", "../test_anonymized.png");
+        PNGfile img_anonymized("../test_anonymized.png");
+        std::cout << img_anonymized << std::endl;
+
+        img.show();
     }
     catch (const PNGfile::Exception& e) {
         std::cout << e.what() << std::endl;

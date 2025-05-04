@@ -64,18 +64,9 @@ class PNGfile {
         const unsigned int& height() const
             { return header->height; }
 
-        void modify(const std::string& path) {
-            for (auto dat : imageData) {
-                dat.crc[0] = 1;
-                dat.crc[1] = 1;
-                dat.crc[2] = 1;
-                dat.crc[3] = 1;
-            }
+        void modify(const std::string& path);
 
-            save(path);
-        }
-
-        void anonymize(const std::string& path);
+        void anonymize(const std::string& src, const std::string& dst);
 
         /// @brief Displays the PNG image using SFML.
         void show() const;

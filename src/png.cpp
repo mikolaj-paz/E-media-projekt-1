@@ -29,7 +29,7 @@ PNGfile::PNGfile(const char* path) {
     header = new IHDR(img, chunkSize);
     
     int temp = 0;
-    while (chunkType != "IEND") {
+    while (img.peek() != EOF) {
         read_size_type(img, chunkSize, chunkType);
 
         if (chunkType == "IDAT")
@@ -50,8 +50,12 @@ PNGfile::PNGfile(const char* path) {
             ancillaryChunks.push_back(new pHYs(img, chunkSize));
         else if (chunkType == "cHRM")
             ancillaryChunks.push_back(new cHRM(img, chunkSize));
-        else
-            ancillaryChunks.push_back(new base_chunk(img, chunkSize, chunkType));
+        else {
+            if (chunkType[0] > 'A' && chunkType[0] < 'Z')
+                criticalChunks.push_back(new base_chunk(img, chunkSize, chunkType));
+            else
+                ancillaryChunks.push_back(new base_chunk(img, chunkSize, chunkType));
+        }
     }
 
     switch (header->colorType) {
@@ -73,6 +77,20 @@ PNGfile::PNGfile(const char* path) {
     }
 
     img.close();
+}
+
+void PNGfile::modify(const std::string& path) {
+    for (auto& dat : imageData) {
+        dat.crc[0] = 1;
+        dat.crc[1] = 1;
+        dat.crc[2] = 1;
+        dat.crc[3] = 1;
+    }
+
+    std::ifstream blank;
+    criticalChunks.push_back(new base_chunk(blank, 0, "sECR"));
+
+    save(path);
 }
 
 void PNGfile::show() const {
