@@ -1,3 +1,6 @@
 [submodule "lib/SFML"]
 	path = lib/SFML
 	url = https://github.com/SFML/SFML.git
+[submodule "lib/cryptopp"]
+	path = lib/cryptopp
+	url = https://github.com/abdes/cryptopp-cmake
