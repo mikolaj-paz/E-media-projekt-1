@@ -4,3 +4,6 @@
 [submodule "lib/cryptopp"]
 	path = lib/cryptopp
 	url = https://github.com/abdes/cryptopp-cmake
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = https://github.com/madler/zlib.git
