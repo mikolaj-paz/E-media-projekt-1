@@ -1,9 +1,12 @@
 #include <png.hpp>
 #include <helper.hpp>
+#include <rsa.hpp>
 
 #include <iostream>
 #include <SFML/Graphics.hpp>
+#include <cryptopp/integer.h>
 #include <math.h>
+#include <algorithm>
 
 PNGfile::PNGfile(const char* path) {
     std::ifstream img(path, std::ios::binary);
@@ -91,6 +94,44 @@ void PNGfile::modify(const std::string& path) {
     criticalChunks.push_back(new base_chunk(blank, 0, "sECR"));
 
     save(path);
+}
+
+void PNGfile::encrypt(const std::string& path, const bool& encrypt_compressed) {
+    CryptoPP::Integer n, d, e;
+    RSA::generate_keys(n, d, e);
+
+    if (encrypt_compressed)
+        for (IDAT& idat : imageData) {
+            RSA::encrypt(idat.data, idat.size, n, d, e);
+            save(path);
+        }
+    else {
+        sf::Image image(srcDir);
+
+        unsigned int pixel_data_size = image.getSize().x * image.getSize().y * 4;
+        byte_t pixel_data[pixel_data_size];
+
+        std::copy(image.getPixelsPtr(), image.getPixelsPtr() + pixel_data_size, pixel_data);
+
+        RSA::encrypt(pixel_data, pixel_data_size, n, d, e);
+
+        for (auto y = 0u; y < image.getSize().y; ++y)
+            for (auto x = 0u; x < image.getSize().x; ++x) {
+                auto index = 4u * y * image.getSize().y + x * 4u;
+                image.setPixel(
+                    {x, y}, 
+                    sf::Color(
+                        pixel_data[index],
+                        pixel_data[index + 1],
+                        pixel_data[index + 2],
+                        pixel_data[index + 3]
+                    )
+                );
+            }
+
+        if (!image.saveToFile(path))
+            throw PNGfile::Exception("Couldn't save file.");
+    }
 }
 
 void PNGfile::show() const {

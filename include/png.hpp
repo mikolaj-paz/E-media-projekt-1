@@ -7,6 +7,7 @@
 
 #include "critical_chunks.hpp"
 #include "ancillary_chunks.hpp"
+#include "rsa.hpp"
 
 #ifndef byte_t
 #define byte_t unsigned char
@@ -67,6 +68,8 @@ class PNGfile {
         void modify(const std::string& path);
 
         void anonymize(const std::string& src, const std::string& dst);
+
+        void encrypt(const std::string& path, const bool& encrypt_compressed = true);
 
         /// @brief Displays the PNG image using SFML.
         void show() const;
