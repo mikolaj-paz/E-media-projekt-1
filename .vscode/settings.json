@@ -68,6 +68,8 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "forward_list": "cpp",
+        "set": "cpp"
     }
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <vector>
 
 #include <rsa.hpp>
 #include <cryptopp/osrng.h>
@@ -9,7 +10,7 @@ using namespace CryptoPP;
 
 void RSA::generate_keys(Integer& n, Integer& d, Integer& e) {
     AutoSeededRandomPool rng;
-    AlgorithmParameters params = MakeParameters("BitLength", 1024)
+    AlgorithmParameters params = MakeParameters("BitLength", 512)
                                                 ("RandomNumberType", Integer::PRIME);
 
     Integer p, q;
@@ -26,41 +27,152 @@ void RSA::generate_keys(Integer& n, Integer& d, Integer& e) {
     d = e.InverseMod(phi_n);
 }
 
-void RSA::encrypt(
-    byte_t* data,
-    unsigned int& size,
-    CryptoPP::Integer& n,
-    CryptoPP::Integer& d,
-    CryptoPP::Integer& e,
+std::vector<byte_t> RSA::encrypt(
+    const byte_t* data,
+    const unsigned int& size,
+    const CryptoPP::Integer& n,
+    const CryptoPP::Integer& e,
     const bool& use_ecb
 ) {
-    unsigned int block_size = n.ByteCount() / 2u;
-    unsigned int block_count = std::ceil(static_cast<double>(size) / block_size);
-    
-    byte_t new_data[2u * size];
-  
-    for (auto i = 0u; i < block_count; ++i) {
-        encrypt_block(
-            data + (i * block_size), 
-            new_data + (i * 2u * block_size), 
-            std::min(block_size, size - (i + 1u) * block_size),
-            e,
-            n
-        );
+    unsigned int in_block_size = n.ByteCount() / 2;
+    unsigned int block_count = std::ceil(static_cast<double>(size) / in_block_size);
+
+    std::vector<byte_t> result;
+    result.reserve(block_count * 2 * in_block_size);
+
+    for (unsigned int i = 0; i < block_count; ++i) {
+        unsigned int offset = i * in_block_size;
+        unsigned int chunk_size = std::min(in_block_size, size - offset);
+
+        auto encrypted_block = encrypt_block(data + offset, chunk_size, e, n);
+
+        if (i % 2 == 0)
+            result.insert(result.end(), encrypted_block.begin(), encrypted_block.end());    
     }
 
-    std::copy(new_data, new_data + size, data);
-    // size *= 2u;
+    return result;
 }
 
-void RSA::encrypt_block(
-    byte_t* const m, 
-    byte_t* const c,
+std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
+    const byte_t* data,
+    unsigned size,
+    const CryptoPP::Integer& n,
+    const CryptoPP::Integer& e,
+    unsigned short& padding_length
+) {
+    const unsigned k_bytes = n.ByteCount() / 2u;
+    const unsigned n_bytes = 2u * k_bytes;
+
+    padding_length = static_cast<unsigned short>((k_bytes - (size % k_bytes)) % k_bytes);
+    const unsigned total = size + padding_length;
+    const unsigned blocks = total / k_bytes;
+
+    std::vector<byte_t> first;
+    first.reserve(total);
+
+    std::vector<byte_t> second;
+    second.reserve(total);
+
+    for (unsigned b = 0; b < blocks; ++b) {
+        byte_t plain_buffer[512] = {0};
+        std::memcpy(
+            plain_buffer,
+            data + b * k_bytes,
+            (b == blocks - 1) ? k_bytes - padding_length : k_bytes
+        );
+
+        Integer m(plain_buffer, k_bytes);
+        Integer c = a_exp_b_mod_c(m, e, n);
+
+        byte_t c_bytes[1024];
+        c.Encode(c_bytes, n_bytes);
+
+        first.insert(first.end(), c_bytes, c_bytes + k_bytes);
+        second.insert(second.end(), c_bytes + k_bytes, c_bytes + n_bytes);
+    }
+
+    return {std::move(first), std::move(second)};
+}
+
+std::vector<byte_t> RSA::decrypt(
+    const byte_t* data,
+    const unsigned int& size,
+    const Integer& n,
+    const Integer& d,
+    const bool& use_ecb
+) {
+    const unsigned int in_block = n.ByteCount() / 2u;
+    const unsigned int enc_block = 2 * in_block;
+    const unsigned int kept_blocks = size / enc_block;
+
+    std::vector<byte_t> plain(kept_blocks * in_block * 2, 0);
+    for (unsigned int j = 0; j < kept_blocks; ++j) {
+        auto dec = decrypt_block(data + j * enc_block, in_block, d, n);
+        const unsigned int orig_idx = j * in_block * 2;
+        std::copy(dec.begin(), dec.end(), plain.begin() + orig_idx);
+    }
+
+    return plain;
+}
+
+std::vector<byte_t> RSA::decrypt_half_join(
+    const byte_t* first_half,
+    const byte_t* second_half,
+    unsigned cipher_pairs,
+    unsigned short padding_length,
+    const CryptoPP::Integer& n,
+    const CryptoPP::Integer& d
+) {
+    const unsigned k_bytes = n.ByteCount() / 2;
+    const unsigned n_bytes = 2u * k_bytes;
+
+    std::vector<byte_t> plain;
+    plain.reserve(cipher_pairs * k_bytes);
+
+    for (unsigned b = 0; b < cipher_pairs; ++b) {
+        byte_t c_buffer[1024];
+        std::memcpy(c_buffer, first_half + b * k_bytes, k_bytes);
+        std::memcpy(c_buffer + k_bytes, second_half + b * k_bytes, k_bytes);
+
+        Integer c(c_buffer, n_bytes);
+        Integer m = a_exp_b_mod_c(c, d, n);
+
+        byte_t m_bytes[512];
+        m.Encode(m_bytes, k_bytes);
+
+        plain.insert(plain.end(), m_bytes, m_bytes + k_bytes);
+    }
+
+    plain.resize(plain.size() - padding_length);
+    return plain;
+}
+
+std::vector<byte_t> RSA::encrypt_block(
+    const byte_t* m,
     const unsigned int& in_block_size,
-    Integer& e,
-    Integer& n
+    const Integer& e,
+    const Integer& n
 ) {
     Integer m_int(m, in_block_size);
     Integer c_int = a_exp_b_mod_c(m_int, e, n);
-    c_int.Encode(c, 2u * in_block_size);
+
+    unsigned int out_block_size = 2 * in_block_size;
+    std::vector<byte_t> buffer(out_block_size);
+    c_int.Encode(buffer.data(), out_block_size);
+
+    return buffer;
+}
+
+std::vector<byte_t> RSA::decrypt_block(
+    const byte_t* const c,
+    const unsigned int& out_block_size,
+    const Integer& d,
+    const Integer& n
+) {
+    Integer c_int(c, 2u * out_block_size);
+    Integer m_int = a_exp_b_mod_c(c_int, d, n);
+
+    std::vector<byte_t> buffer(out_block_size);
+    m_int.Encode(buffer.data(), buffer.size());
+    return buffer;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 
 #include "helper.hpp"
 
@@ -50,6 +51,18 @@ class base_chunk {
 
             // CRC
             img.read(reinterpret_cast<char*>(crc), 4);
+        }
+
+        base_chunk(const std::vector<byte_t>& buffer, const std::string type): 
+            size{static_cast<unsigned>(buffer.size())}, type{type} 
+        {
+            data = new byte_t[size];
+            std::copy(buffer.begin(), buffer.end(), data);
+
+            crc[0] = 27;
+            crc[1] = 2;
+            crc[2] = 57;
+            crc[3] = 1;
         }
 
         ~base_chunk()

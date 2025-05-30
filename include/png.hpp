@@ -69,7 +69,20 @@ class PNGfile {
 
         void anonymize(const std::string& src, const std::string& dst);
 
-        void encrypt(const std::string& path, const bool& encrypt_compressed = true);
+        void encrypt(
+            const std::string& path,
+            CryptoPP::Integer& n,
+            CryptoPP::Integer& d,
+            CryptoPP::Integer& e,
+            const bool& encrypt_compressed = false
+        );
+
+        void decrypt(
+            const std::string& path,
+            const CryptoPP::Integer& n,
+            const CryptoPP::Integer& d,
+            const bool& decrypt_compressed = false
+        );
 
         /// @brief Displays the PNG image using SFML.
         void show() const;
@@ -162,4 +175,6 @@ class PNGfile {
             img.write(reinterpret_cast<char*>(chunk->data), chunk->size);
             img.write(reinterpret_cast<const char*>(chunk->crc), 4);
         }
+
+        static void replace_idat_data(IDAT& idat, const std::vector<byte_t>& src);
 };

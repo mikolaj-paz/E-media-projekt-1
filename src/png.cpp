@@ -96,41 +96,91 @@ void PNGfile::modify(const std::string& path) {
     save(path);
 }
 
-void PNGfile::encrypt(const std::string& path, const bool& encrypt_compressed) {
-    CryptoPP::Integer n, d, e;
+void PNGfile::encrypt(
+    const std::string& path,
+    Integer& n,
+    Integer& d,
+    Integer& e,
+    const bool& encrypt_compressed
+) {
     RSA::generate_keys(n, d, e);
 
-    if (encrypt_compressed)
+    if (encrypt_compressed) {
         for (IDAT& idat : imageData) {
-            RSA::encrypt(idat.data, idat.size, n, d, e);
-            save(path);
+            unsigned short padding_length = 0;
+            auto [first, second] = RSA::encrypt_half_split(idat.data, idat.size, n, e, padding_length);
+            
+            replace_idat_data(idat, first);
+
+            std::vector<byte_t> helper;
+            helper.reserve(2 + second.size());
+            helper.push_back(static_cast<byte_t>(padding_length & 0xFF));
+            helper.push_back(static_cast<byte_t>(padding_length >> 8));
+            helper.insert(helper.end(), second.begin(), second.end());
+
+            criticalChunks.push_back(new base_chunk(helper, "sRSA"));
         }
+        save(path);
+    }
     else {
         sf::Image image(srcDir);
 
-        unsigned int pixel_data_size = image.getSize().x * image.getSize().y * 4;
-        byte_t pixel_data[pixel_data_size];
+        unsigned int w = image.getSize().x;
+        unsigned int h = image.getSize().y;
+        unsigned int pixel_data_size = w * h * 4;
 
-        std::copy(image.getPixelsPtr(), image.getPixelsPtr() + pixel_data_size, pixel_data);
+        std::vector<byte_t> pixel_data(image.getPixelsPtr(), image.getPixelsPtr() + pixel_data_size);
+        auto encrypted = RSA::encrypt(pixel_data.data(), pixel_data_size, n, e);
 
-        RSA::encrypt(pixel_data, pixel_data_size, n, d, e);
+        unsigned int usable_size = std::min<unsigned int>(pixel_data_size, encrypted.size());
 
-        for (auto y = 0u; y < image.getSize().y; ++y)
-            for (auto x = 0u; x < image.getSize().x; ++x) {
-                auto index = 4u * y * image.getSize().y + x * 4u;
-                image.setPixel(
-                    {x, y}, 
-                    sf::Color(
-                        pixel_data[index],
-                        pixel_data[index + 1],
-                        pixel_data[index + 2],
-                        pixel_data[index + 3]
-                    )
-                );
-            }
+        for (unsigned int i = 0; i < usable_size / 4; ++i) {
+            sf::Color color;
+            color.r = encrypted[4 * i + 0];
+            color.g = encrypted[4 * i + 1];
+            color.b = encrypted[4 * i + 2];
+            color.a = encrypted[4 * i + 3];
+            unsigned int x = i % w;
+            unsigned int y = i / w;
+            if (y < h)
+                image.setPixel({x, y}, color);
+        }
 
         if (!image.saveToFile(path))
             throw PNGfile::Exception("Couldn't save file.");
+    }
+}
+
+void PNGfile::decrypt(
+    const std::string& path,
+    const CryptoPP::Integer& n,
+    const CryptoPP::Integer& d,
+    const bool& decrypt_compressed
+) {
+    if (decrypt_compressed) {
+        for (size_t i = 0; i < imageData.size(); ++i) {
+            const base_chunk* sRSA = criticalChunks[criticalChunks.size() - imageData.size() + i];
+
+            std::cout << sRSA->type << ' ' << sRSA->size << std::endl;
+
+            const byte_t* buffer = sRSA->data;
+            unsigned short padding = buffer[0] | (buffer[1] << 8);
+
+            const byte_t* second = buffer + 2;
+            unsigned cipher_pairs = imageData[i].size / (n.ByteCount() / 2u);
+
+            auto plain = RSA::decrypt_half_join(
+                imageData[i].data,
+                second,
+                cipher_pairs,
+                padding,
+                n,
+                d
+            );
+
+            replace_idat_data(imageData[i], plain);
+        }
+        save(path);
     }
 }
 
@@ -219,6 +269,16 @@ void PNGfile::save(const std::string& path) const {
         save_chunk(img, i);
 
     img.close();
+}
+
+void PNGfile::replace_idat_data(IDAT& idat, const std::vector<byte_t>& src) {
+    byte_t* new_buf = new byte_t[src.size()];
+    std::memcpy(new_buf, src.data(), src.size());
+
+    delete[] idat.data;
+
+    idat.data = new_buf;
+    idat.size = static_cast<unsigned>(src.size());
 }
 
 std::ostream& operator<<(std::ostream& out, const PNGfile& obj) {
