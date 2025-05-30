@@ -4,6 +4,7 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <map>
 
 #include "critical_chunks.hpp"
 #include "ancillary_chunks.hpp"
@@ -177,4 +178,18 @@ class PNGfile {
         }
 
         static void replace_idat_data(IDAT& idat, const std::vector<byte_t>& src);
+
+        void push_mia_chunk(const std::vector<byte_t>& buffer, const unsigned short& padding_length);
+
+        void encrypt_compressed_idat(IDAT& idat, const Integer& n, const Integer& e);
+
+        void decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, const Integer& n, const Integer& d);
+
+        std::vector<byte_t> inflate(const std::vector<byte_t>& compressed, std::vector<byte_t>& filter_bytes);
+
+        std::vector<byte_t> deflate(const std::vector<byte_t>& pixel_data, const std::vector<byte_t>& filter_bytes);
+
+        std::vector<byte_t> inflate_buffer(const byte_t* data, const unsigned& size);
+
+        std::vector<byte_t> deflate_buffer(const byte_t* data, const unsigned& size, const int& compression_level = 9);
 };

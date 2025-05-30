@@ -1,10 +1,8 @@
 #include <png.hpp>
 #include <helper.hpp>
-#include <rsa.hpp>
 
 #include <iostream>
 #include <SFML/Graphics.hpp>
-#include <cryptopp/integer.h>
 #include <math.h>
 #include <algorithm>
 
@@ -94,94 +92,6 @@ void PNGfile::modify(const std::string& path) {
     criticalChunks.push_back(new base_chunk(blank, 0, "sECR"));
 
     save(path);
-}
-
-void PNGfile::encrypt(
-    const std::string& path,
-    Integer& n,
-    Integer& d,
-    Integer& e,
-    const bool& encrypt_compressed
-) {
-    RSA::generate_keys(n, d, e);
-
-    if (encrypt_compressed) {
-        for (IDAT& idat : imageData) {
-            unsigned short padding_length = 0;
-            auto [first, second] = RSA::encrypt_half_split(idat.data, idat.size, n, e, padding_length);
-            
-            replace_idat_data(idat, first);
-
-            std::vector<byte_t> helper;
-            helper.reserve(2 + second.size());
-            helper.push_back(static_cast<byte_t>(padding_length & 0xFF));
-            helper.push_back(static_cast<byte_t>(padding_length >> 8));
-            helper.insert(helper.end(), second.begin(), second.end());
-
-            criticalChunks.push_back(new base_chunk(helper, "sRSA"));
-        }
-        save(path);
-    }
-    else {
-        sf::Image image(srcDir);
-
-        unsigned int w = image.getSize().x;
-        unsigned int h = image.getSize().y;
-        unsigned int pixel_data_size = w * h * 4;
-
-        std::vector<byte_t> pixel_data(image.getPixelsPtr(), image.getPixelsPtr() + pixel_data_size);
-        auto encrypted = RSA::encrypt(pixel_data.data(), pixel_data_size, n, e);
-
-        unsigned int usable_size = std::min<unsigned int>(pixel_data_size, encrypted.size());
-
-        for (unsigned int i = 0; i < usable_size / 4; ++i) {
-            sf::Color color;
-            color.r = encrypted[4 * i + 0];
-            color.g = encrypted[4 * i + 1];
-            color.b = encrypted[4 * i + 2];
-            color.a = encrypted[4 * i + 3];
-            unsigned int x = i % w;
-            unsigned int y = i / w;
-            if (y < h)
-                image.setPixel({x, y}, color);
-        }
-
-        if (!image.saveToFile(path))
-            throw PNGfile::Exception("Couldn't save file.");
-    }
-}
-
-void PNGfile::decrypt(
-    const std::string& path,
-    const CryptoPP::Integer& n,
-    const CryptoPP::Integer& d,
-    const bool& decrypt_compressed
-) {
-    if (decrypt_compressed) {
-        for (size_t i = 0; i < imageData.size(); ++i) {
-            const base_chunk* sRSA = criticalChunks[criticalChunks.size() - imageData.size() + i];
-
-            std::cout << sRSA->type << ' ' << sRSA->size << std::endl;
-
-            const byte_t* buffer = sRSA->data;
-            unsigned short padding = buffer[0] | (buffer[1] << 8);
-
-            const byte_t* second = buffer + 2;
-            unsigned cipher_pairs = imageData[i].size / (n.ByteCount() / 2u);
-
-            auto plain = RSA::decrypt_half_join(
-                imageData[i].data,
-                second,
-                cipher_pairs,
-                padding,
-                n,
-                d
-            );
-
-            replace_idat_data(imageData[i], plain);
-        }
-        save(path);
-    }
 }
 
 void PNGfile::show() const {

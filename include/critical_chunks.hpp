@@ -76,6 +76,8 @@ class IDAT : public base_chunk {
         ///
         IDAT(std::ifstream &img, const unsigned int size): base_chunk(img, size, std::string("IDAT")) {}
 
+        IDAT(const std::vector<byte_t>& buffer): base_chunk(buffer, "IDAT") {}
+
         friend class PNGfile;
 
         /// Overloads the stream insertion operator to output the contents of an IDAT object

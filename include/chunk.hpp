@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <vector>
+#include <cstring>
 
 #include "helper.hpp"
 
@@ -57,7 +58,7 @@ class base_chunk {
             size{static_cast<unsigned>(buffer.size())}, type{type} 
         {
             data = new byte_t[size];
-            std::copy(buffer.begin(), buffer.end(), data);
+            std::memcpy(data, buffer.data(), size);
 
             crc[0] = 27;
             crc[1] = 2;

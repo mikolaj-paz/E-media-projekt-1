@@ -21,7 +21,9 @@ add_executable( project2
     "src/helper.cpp"
     "src/critical_chunks.cpp"
     "src/ancillary_chunks.cpp"
+    "src/compression.cpp"
     "src/rsa.cpp"
+    "src/cryptosystem.cpp"
     "src/png.cpp"
     "src/project2.cpp"
 )

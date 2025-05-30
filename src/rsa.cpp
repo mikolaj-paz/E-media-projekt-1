@@ -27,32 +27,6 @@ void RSA::generate_keys(Integer& n, Integer& d, Integer& e) {
     d = e.InverseMod(phi_n);
 }
 
-std::vector<byte_t> RSA::encrypt(
-    const byte_t* data,
-    const unsigned int& size,
-    const CryptoPP::Integer& n,
-    const CryptoPP::Integer& e,
-    const bool& use_ecb
-) {
-    unsigned int in_block_size = n.ByteCount() / 2;
-    unsigned int block_count = std::ceil(static_cast<double>(size) / in_block_size);
-
-    std::vector<byte_t> result;
-    result.reserve(block_count * 2 * in_block_size);
-
-    for (unsigned int i = 0; i < block_count; ++i) {
-        unsigned int offset = i * in_block_size;
-        unsigned int chunk_size = std::min(in_block_size, size - offset);
-
-        auto encrypted_block = encrypt_block(data + offset, chunk_size, e, n);
-
-        if (i % 2 == 0)
-            result.insert(result.end(), encrypted_block.begin(), encrypted_block.end());    
-    }
-
-    return result;
-}
-
 std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
     const byte_t* data,
     unsigned size,
@@ -92,27 +66,6 @@ std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
     }
 
     return {std::move(first), std::move(second)};
-}
-
-std::vector<byte_t> RSA::decrypt(
-    const byte_t* data,
-    const unsigned int& size,
-    const Integer& n,
-    const Integer& d,
-    const bool& use_ecb
-) {
-    const unsigned int in_block = n.ByteCount() / 2u;
-    const unsigned int enc_block = 2 * in_block;
-    const unsigned int kept_blocks = size / enc_block;
-
-    std::vector<byte_t> plain(kept_blocks * in_block * 2, 0);
-    for (unsigned int j = 0; j < kept_blocks; ++j) {
-        auto dec = decrypt_block(data + j * enc_block, in_block, d, n);
-        const unsigned int orig_idx = j * in_block * 2;
-        std::copy(dec.begin(), dec.end(), plain.begin() + orig_idx);
-    }
-
-    return plain;
 }
 
 std::vector<byte_t> RSA::decrypt_half_join(
