@@ -30,9 +30,10 @@ void RSA::generate_keys(Integer& n, Integer& d, Integer& e) {
 std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
     const byte_t* data,
     unsigned size,
-    const CryptoPP::Integer& n,
-    const CryptoPP::Integer& e,
-    unsigned short& padding_length
+    const Integer& n,
+    const Integer& e,
+    unsigned short& padding_length,
+    const bool& use_ecb
 ) {
     const unsigned k_bytes = n.ByteCount() / 2u;
     const unsigned n_bytes = 2u * k_bytes;
@@ -45,7 +46,18 @@ std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
     first.reserve(total);
 
     std::vector<byte_t> second;
-    second.reserve(total);
+    second.reserve(total + k_bytes);
+
+    AutoSeededRandomPool rng;
+    Integer prev;
+
+    if (!use_ecb)
+    {
+        std::vector<byte_t> tmp(k_bytes);
+        rng.GenerateBlock(tmp.data(), k_bytes);
+        prev = Integer(tmp.data(), k_bytes);
+        second.insert(second.end(), tmp.begin(), tmp.end());
+    }
 
     for (unsigned b = 0; b < blocks; ++b) {
         byte_t plain_buffer[512] = {0};
@@ -56,13 +68,22 @@ std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
         );
 
         Integer m(plain_buffer, k_bytes);
-        Integer c = a_exp_b_mod_c(m, e, n);
+        Integer c;
+
+        if (use_ecb)
+            c = a_exp_b_mod_c(m, e, n);
+        else {
+            Integer m_xor = m ^ prev;
+            c = a_exp_b_mod_c(m_xor, e, n);
+        }
 
         byte_t c_bytes[1024];
         c.Encode(c_bytes, n_bytes);
 
         first.insert(first.end(), c_bytes, c_bytes + k_bytes);
         second.insert(second.end(), c_bytes + k_bytes, c_bytes + n_bytes);
+
+        if (!use_ecb) prev = Integer(c_bytes, k_bytes);
     }
 
     return {std::move(first), std::move(second)};
@@ -73,59 +94,49 @@ std::vector<byte_t> RSA::decrypt_half_join(
     const byte_t* second_half,
     unsigned cipher_pairs,
     unsigned short padding_length,
-    const CryptoPP::Integer& n,
-    const CryptoPP::Integer& d
+    const Integer& n,
+    const Integer& d,
+    const bool& use_ecb
 ) {
     const unsigned k_bytes = n.ByteCount() / 2;
     const unsigned n_bytes = 2u * k_bytes;
 
+    Integer prev;
+
+    const byte_t* iv = nullptr;
+    if (!use_ecb) {
+        iv = second_half;
+        second_half += k_bytes;
+        --cipher_pairs;
+        prev = Integer(iv, k_bytes);
+    }
+
     std::vector<byte_t> plain;
     plain.reserve(cipher_pairs * k_bytes);
 
+    byte_t c_buffer[1024];
+    byte_t m_bytes[512];
+
     for (unsigned b = 0; b < cipher_pairs; ++b) {
-        byte_t c_buffer[1024];
         std::memcpy(c_buffer, first_half + b * k_bytes, k_bytes);
         std::memcpy(c_buffer + k_bytes, second_half + b * k_bytes, k_bytes);
 
         Integer c(c_buffer, n_bytes);
         Integer m = a_exp_b_mod_c(c, d, n);
 
-        byte_t m_bytes[512];
-        m.Encode(m_bytes, k_bytes);
-
-        plain.insert(plain.end(), m_bytes, m_bytes + k_bytes);
+        if (use_ecb) {
+            m.Encode(m_bytes, k_bytes);
+            plain.insert(plain.end(), m_bytes, m_bytes + k_bytes);
+        }
+        else {
+            Integer p = m ^ prev;
+            byte_t p_bytes[512];
+            p.Encode(p_bytes, k_bytes);
+            plain.insert(plain.end(), p_bytes, p_bytes + k_bytes);
+            prev = Integer(first_half + b * k_bytes, k_bytes);
+        }
     }
 
     plain.resize(plain.size() - padding_length);
     return plain;
-}
-
-std::vector<byte_t> RSA::encrypt_block(
-    const byte_t* m,
-    const unsigned int& in_block_size,
-    const Integer& e,
-    const Integer& n
-) {
-    Integer m_int(m, in_block_size);
-    Integer c_int = a_exp_b_mod_c(m_int, e, n);
-
-    unsigned int out_block_size = 2 * in_block_size;
-    std::vector<byte_t> buffer(out_block_size);
-    c_int.Encode(buffer.data(), out_block_size);
-
-    return buffer;
-}
-
-std::vector<byte_t> RSA::decrypt_block(
-    const byte_t* const c,
-    const unsigned int& out_block_size,
-    const Integer& d,
-    const Integer& n
-) {
-    Integer c_int(c, 2u * out_block_size);
-    Integer m_int = a_exp_b_mod_c(c_int, d, n);
-
-    std::vector<byte_t> buffer(out_block_size);
-    m_int.Encode(buffer.data(), buffer.size());
-    return buffer;
 }

@@ -3,24 +3,25 @@
 #include <SFML/Graphics.hpp>
 #include <cryptopp/integer.h>
 
+using namespace CryptoPP;
+
 void PNGfile::encrypt(
     const std::string& path,
     Integer& n,
     Integer& d,
     Integer& e,
-    const bool& encrypt_compressed
+    const bool& encrypt_compressed,
+    const bool& use_ecb
 ) {
     RSA::generate_keys(n, d, e);
 
-    if (encrypt_compressed) {
-        for (IDAT& idat : imageData)
-            encrypt_compressed_idat(idat, n, e);
-    }
-    else {
-        std::vector<byte_t> compressed;
-        for (auto& idat : imageData)
-            compressed.insert(compressed.end(), idat.data, idat.data + idat.size);
+    std::vector<byte_t> compressed;
+    for (IDAT& idat : imageData)
+        compressed.insert(compressed.end(), idat.data, idat.data + idat.size);
 
+    if (encrypt_compressed)
+        encrypt_compressed_data(compressed, n, e, use_ecb);
+    else {
         std::vector<byte_t> filter_bytes;
         auto pixel_data = inflate(compressed, filter_bytes);
         
@@ -28,9 +29,9 @@ void PNGfile::encrypt(
         auto [first, second] = RSA::encrypt_half_split(
             pixel_data.data(),
             static_cast<unsigned>(pixel_data.size()),
-            n,
-            e,
-            padding_length
+            n, e,
+            padding_length,
+            use_ecb
         );
 
         auto recompressed = deflate(first, filter_bytes);
@@ -45,30 +46,27 @@ void PNGfile::encrypt(
 
 void PNGfile::decrypt(
     const std::string& path,
-    const CryptoPP::Integer& n,
-    const CryptoPP::Integer& d,
-    const bool& decrypt_compressed
+    const Integer& n,
+    const Integer& d,
+    const bool& decrypt_compressed,
+    const bool& use_ecb
 ) {
-    if (decrypt_compressed) {
-        for (size_t i = 0; i < imageData.size(); ++i) {
-            const base_chunk* const eMIA = criticalChunks[criticalChunks.size() - imageData.size() + i];
-            decrypt_compressed_idat(imageData[i], eMIA, n, d);
+    base_chunk* eMIA = nullptr;
+    for (auto* chunk : ancillaryChunks)
+        if (chunk->type == "eMIA") { 
+            eMIA = chunk; 
+            break;
         }
-    }
-    else {
-        base_chunk* mia = nullptr;
-        for (auto* chunk : criticalChunks)
-            if (chunk->type == "eMIA") { 
-                mia = chunk; 
-                break;
-            }
-        
-        if (!mia) throw PNGfile::Exception("Missing eMIA chunk.");
+    
+    if (!eMIA) throw PNGfile::Exception("Missing eMIA chunk.");
 
-        const byte_t* buffer = mia->data;
+    if (decrypt_compressed)
+        decrypt_compressed_idat(imageData[0], eMIA, n, d, use_ecb);
+    else {
+        const byte_t* buffer = eMIA->data;
         unsigned short padding_length = buffer[0] | (buffer[1] << 8);
         const byte_t* second = buffer + 2;
-        const unsigned second_size = mia->size - 2;
+        const unsigned second_size = eMIA->size - 2;
 
         std::vector<byte_t> compressed;
         for (auto& idat : imageData)
@@ -85,8 +83,8 @@ void PNGfile::decrypt(
             second,
             cipher_pairs,
             padding_length,
-            n,
-            d
+            n, d,
+            use_ecb
         );
 
         auto recompressed = deflate(decrypted, filter_bytes);
@@ -94,7 +92,14 @@ void PNGfile::decrypt(
         imageData.clear();
         imageData.push_back(recompressed);
     }
+
     save(path);
+
+    auto iter = ancillaryChunks.begin();
+    while (iter != ancillaryChunks.end())
+        if ((*iter)->type == "eMIA") 
+            ancillaryChunks.erase(iter);
+        else ++iter;
 }
 
 std::vector<byte_t> PNGfile::inflate(const std::vector<byte_t>& compressed, std::vector<byte_t>& filter_bytes) {
@@ -149,16 +154,17 @@ void PNGfile::push_mia_chunk(const std::vector<byte_t>& buffer, const unsigned s
     criticalChunks.push_back(new base_chunk(helper, "eMIA"));
 }
 
-void PNGfile::encrypt_compressed_idat(IDAT& idat, const Integer& n, const Integer& e) {
+void PNGfile::encrypt_compressed_data(const std::vector<byte_t>& buffer, const Integer& n, const Integer& e, const bool& use_ecb) {
     unsigned short padding_length = 0;
-    auto [first, second] = RSA::encrypt_half_split(idat.data, idat.size, n, e, padding_length);
+    auto [first, second] = RSA::encrypt_half_split(buffer.data(), buffer.size(), n, e, padding_length, use_ecb);
     
-    replace_idat_data(idat, first);
+    imageData.clear();
+    imageData.push_back(IDAT(first));
 
     push_mia_chunk(second, padding_length);
 }
 
-void PNGfile::decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, const Integer& n, const Integer& d) {
+void PNGfile::decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, const Integer& n, const Integer& d, const bool& use_ecb) {
     const byte_t* buffer = sRSA->data;
     unsigned short padding = buffer[0] | (buffer[1] << 8);
 
@@ -170,9 +176,10 @@ void PNGfile::decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, 
         second,
         cipher_pairs,
         padding,
-        n,
-        d
+        n, d,
+        use_ecb
     );
 
-    replace_idat_data(idat, plain);
+    imageData.clear();
+    imageData.push_back(IDAT(plain));
 }

@@ -75,14 +75,16 @@ class PNGfile {
             CryptoPP::Integer& n,
             CryptoPP::Integer& d,
             CryptoPP::Integer& e,
-            const bool& encrypt_compressed = false
+            const bool& encrypt_compressed = false,
+            const bool& use_ecb = false
         );
 
         void decrypt(
             const std::string& path,
             const CryptoPP::Integer& n,
             const CryptoPP::Integer& d,
-            const bool& decrypt_compressed = false
+            const bool& decrypt_compressed = false,
+            const bool& use_ecb = false
         );
 
         /// @brief Displays the PNG image using SFML.
@@ -181,9 +183,9 @@ class PNGfile {
 
         void push_mia_chunk(const std::vector<byte_t>& buffer, const unsigned short& padding_length);
 
-        void encrypt_compressed_idat(IDAT& idat, const Integer& n, const Integer& e);
+        void encrypt_compressed_data(const std::vector<byte_t>& buffer, const Integer& n, const Integer& e, const bool& use_ecb);
 
-        void decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, const Integer& n, const Integer& d);
+        void decrypt_compressed_idat(IDAT& idat, const base_chunk* const sRSA, const Integer& n, const Integer& d, const bool& use_ecb);
 
         std::vector<byte_t> inflate(const std::vector<byte_t>& compressed, std::vector<byte_t>& filter_bytes);
 
