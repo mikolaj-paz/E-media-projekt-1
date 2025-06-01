@@ -10,13 +10,13 @@ using namespace CryptoPP;
 
 void RSA::generate_keys(Integer& n, Integer& d, Integer& e) {
     AutoSeededRandomPool rng;
-    AlgorithmParameters params = MakeParameters("BitLength", 512)
+    AlgorithmParameters params = MakeParameters("BitLength", 1024)
                                                 ("RandomNumberType", Integer::PRIME);
 
     Integer p, q;
 
     p.GenerateRandom(rng, params);
-    q.GenerateRandom(rng, params);
+    q.GenerateRandom(rng, params);  
 
     n = p * q;
 
@@ -60,7 +60,7 @@ std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
     }
 
     for (unsigned b = 0; b < blocks; ++b) {
-        byte_t plain_buffer[512] = {0};
+        byte_t plain_buffer[k_bytes] = {0};
         std::memcpy(
             plain_buffer,
             data + b * k_bytes,
@@ -77,7 +77,7 @@ std::pair<std::vector<byte_t>, std::vector<byte_t>> RSA::encrypt_half_split(
             c = a_exp_b_mod_c(m_xor, e, n);
         }
 
-        byte_t c_bytes[1024];
+        byte_t c_bytes[n_bytes];
         c.Encode(c_bytes, n_bytes);
 
         first.insert(first.end(), c_bytes, c_bytes + k_bytes);
@@ -114,8 +114,8 @@ std::vector<byte_t> RSA::decrypt_half_join(
     std::vector<byte_t> plain;
     plain.reserve(cipher_pairs * k_bytes);
 
-    byte_t c_buffer[1024];
-    byte_t m_bytes[512];
+    byte_t c_buffer[n_bytes];
+    byte_t m_bytes[k_bytes];
 
     for (unsigned b = 0; b < cipher_pairs; ++b) {
         std::memcpy(c_buffer, first_half + b * k_bytes, k_bytes);
@@ -130,7 +130,7 @@ std::vector<byte_t> RSA::decrypt_half_join(
         }
         else {
             Integer p = m ^ prev;
-            byte_t p_bytes[512];
+            byte_t p_bytes[k_bytes];
             p.Encode(p_bytes, k_bytes);
             plain.insert(plain.end(), p_bytes, p_bytes + k_bytes);
             prev = Integer(first_half + b * k_bytes, k_bytes);

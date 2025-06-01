@@ -19,7 +19,7 @@ int main() {
         img.encrypt(
             "../test_encrypted.png",
             n, d, e,
-            /*encrypt_compressed=*/true,
+            /*encrypt_compressed=*/false,
             /*use_ecb=*/false
         );
         auto stop = std::chrono::high_resolution_clock::now();
@@ -27,12 +27,13 @@ int main() {
         std::cout << "Encryption time: " << duration.count() / 1e3 << " s" << std::endl << std::endl;
         
         PNGfile encrypted("../test_encrypted.png");
+        std::cout << encrypted << std::endl;
 
         start = std::chrono::high_resolution_clock::now();
         encrypted.decrypt(
             "../test_decrypted.png",
             n, d,
-            /*decrypt_compressed=*/true,
+            /*decrypt_compressed=*/false,
             /*use_ecb*/false
         );
         stop = std::chrono::high_resolution_clock::now();
