@@ -13,6 +13,7 @@ git submodule update --init --recursive
 ```
 > [!CAUTION]
 > W momencie tworzenia projektu najnowsza wersja **cryptopp-cmake** działa niepoprawnie. W projekcie wykorzystywałem commit z następującym SHA: ```00a151f8489daaa32434ab1f340e6750793ddf0c```.
+Dodatkowo, w projekcie pierwszym wykorzystano bibliotekę [**FFTW**](https://fftw.org/install/windows.html), której pliki zostały ręcznie wklejone do folderu ```/lib```.
 
 ## Kompilacja
 ```bash
